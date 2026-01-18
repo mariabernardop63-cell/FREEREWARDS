@@ -29,6 +29,20 @@ import {
 import { Language, User as UserType } from './types';
 import { TRANSLATIONS, REWARD_LEVELS, OTHER_PRIZES, TESTIMONIALS } from './constants';
 
+// --- Chaves do LocalStorage ---
+const STORAGE_USER_KEY = 'freerewards_user_v1';
+const STORAGE_LANG_KEY = 'freerewards_lang_v1';
+
+// --- Mapeamento de Países para Idiomas ---
+const COUNTRY_TO_LANG: Record<string, Language> = {
+  // Português
+  'BR': 'pt', 'PT': 'pt', 'AO': 'pt', 'MZ': 'pt', 'CV': 'pt', 'ST': 'pt', 'TL': 'pt', 'GW': 'pt',
+  // Espanhol
+  'ES': 'es', 'MX': 'es', 'AR': 'es', 'CO': 'es', 'CL': 'es', 'PE': 'es', 'VE': 'es', 'EC': 'es', 
+  'GT': 'es', 'CU': 'es', 'BO': 'es', 'DO': 'es', 'HN': 'es', 'PY': 'es', 'SV': 'es', 'NI': 'es', 
+  'CR': 'es', 'UY': 'es', 'PA': 'es', 'GQ': 'es'
+};
+
 // --- Função de Simulação de Consulta (API do Jogo) ---
 const consultar_id_jogo = async (id: string, game: 'ff' | 'rbx'): Promise<{ success: boolean, error?: string }> => {
   return new Promise((resolve) => {
@@ -525,13 +539,78 @@ export default function App() {
   const [showRedeem, setShowRedeem] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // --- Sistema de Detecção de Idioma por IP ---
+  const detectLanguageByIP = useCallback(async () => {
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const countryCode = data.country_code;
+      
+      if (countryCode && COUNTRY_TO_LANG[countryCode]) {
+        setLang(COUNTRY_TO_LANG[countryCode]);
+        console.log(`FreeRewards: Localização detectada (${countryCode}). Idioma ajustado para ${COUNTRY_TO_LANG[countryCode]}.`);
+      } else {
+        // Fallback: Se não for PT ou ES, usa EN
+        setLang('en');
+      }
+    } catch (error) {
+      console.warn("FreeRewards: Falha ao detectar idioma por IP, usando fallback.", error);
+    }
+  }, []);
+
+  // --- Efeito de Inicialização (Carregar Dados + Detecção de IP) ---
+  useEffect(() => {
+    const savedUser = localStorage.getItem(STORAGE_USER_KEY);
+    const savedLang = localStorage.getItem(STORAGE_LANG_KEY);
+
+    // 1. Carregar usuário se existir
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch (e) {
+        console.error("Erro ao carregar dados do usuário:", e);
+      }
+    }
+
+    // 2. Lógica de Idioma: 
+    // Prioridade 1: LocalStorage (Preferência salva)
+    // Prioridade 2: Detecção por IP (Localização geográfica)
+    // Prioridade 3: Default (pt)
+    if (savedLang && (['pt', 'en', 'es'].includes(savedLang))) {
+      setLang(savedLang as Language);
+    } else {
+      detectLanguageByIP();
+    }
+    
+    setIsInitialLoad(false);
+  }, [detectLanguageByIP]);
+
+  // --- Efeito de Persistência (Salvar Dados) ---
+  useEffect(() => {
+    if (!isInitialLoad) {
+      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
+    }
+  }, [user, isInitialLoad]);
 
   useEffect(() => {
+    if (!isInitialLoad) {
+      localStorage.setItem(STORAGE_LANG_KEY, lang);
+    }
+  }, [lang, isInitialLoad]);
+
+  useEffect(() => {
+    if (isInitialLoad) return;
+    
     const timer = setTimeout(() => {
       if (!user.isLoggedIn) setShowWelcomePopup(true);
     }, 10000);
     return () => clearTimeout(timer);
-  }, [user.isLoggedIn]);
+  }, [user.isLoggedIn, isInitialLoad]);
 
   const handleLogin = () => setShowLogin(true);
 
@@ -545,10 +624,10 @@ export default function App() {
       isLoggedIn: true, 
       email: id, 
       nickname: "Jogador_" + id.slice(-4), 
-      unclaimedDiamonds: 10 
+      unclaimedDiamonds: prev.unclaimedDiamonds > 0 ? prev.unclaimedDiamonds : 10 
     })); 
     setShowLogin(false);
-    addNotification(`ID verificado! Bônus de 10 dimas ativo.`);
+    addNotification(`ID verificado! Sincronização concluída.`);
   };
 
   const handleRedeem = () => {
@@ -576,7 +655,6 @@ export default function App() {
       REWARD_LEVELS.forEach(level => {
         if (newShares >= level.shares && prev.shares < level.shares) {
           addedDiamonds += level.diamonds;
-          // Pequeno delay na notificação para parecer processamento
           setTimeout(() => addNotification(`Nível ${level.name} Desbloqueado! +${level.diamonds} dimas.`), 500);
         }
       });
