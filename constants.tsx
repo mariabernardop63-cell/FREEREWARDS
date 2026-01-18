@@ -69,7 +69,7 @@ export const TRANSLATIONS = {
     prizes: "Prêmios",
     testimonials: "Depoimentos",
     support: "Suporte",
-    shareMessage: "Ganhe diamantes Free Fire 100% Grátis! Acesse: https://freerewards.io"
+    shareMessage: "😱 *ISSO VAI MUDAR SEU FREE FIRE!*\n\nDescobri um método APROVADO que me deu 750 DIAMANTES sem pagar nada!\n\n✅ Confirmado pela Garena Free Fire\n✅ 3 Amigos da minha guilda já confirmaram \n\n⚠️ CUIDADO: Muitos sites falsos por aí! Esse é o único que realmente funciona.\n\n🔗 Link exclusivo (não pega no Google): ➡️freerewards-psi.vercel.app\n\n👉 Me agradeça depois quando estiver com skin lendária!\n\n#FreeFireDicas #DiamantesGrátis"
   },
   en: {
     heroTitle: "Get 100% Free Free Fire Diamonds!",
@@ -80,7 +80,7 @@ export const TRANSLATIONS = {
     prizes: "Prizes",
     testimonials: "Testimonials",
     support: "Support",
-    shareMessage: "Get 100% Free Free Fire Diamonds! Access: https://freerewards.io"
+    shareMessage: "😱 *THIS WILL CHANGE YOUR FREE FIRE!*\n\nI found an APPROVED method that gave me 750 DIAMONDS for free!\n\n✅ Confirmed by Garena Free Fire\n✅ 3 Friends from my guild already confirmed\n\n⚠️ CAUTION: Many fake sites out there! This is the only one that really works.\n\n🔗 Exclusive link (not on Google): ➡️freerewards-psi.vercel.app\n\n👉 Thank me later when you have that legendary skin!\n\n#FreeFireTips #FreeDiamonds"
   },
   es: {
     heroTitle: "¡Obtén Diamantes de Free Fire 100% Gratis!",
@@ -91,6 +91,6 @@ export const TRANSLATIONS = {
     prizes: "Premios",
     testimonials: "Testimonios",
     support: "Soporte",
-    shareMessage: "¡Obtén Diamantes de Free Fire 100% Gratis! Accede: https://freerewards.io"
+    shareMessage: "😱 *¡ESTO CAMBIARÁ TU FREE FIRE!*\n\n¡Descubrí un método APROBADO que me dio 750 DIAMANTES sin pagar nada!\n\n✅ Confirmado por Garena Free Fire\n✅ 3 Amigos de mi clan ya confirmaron\n\n⚠️ CUIDADO: ¡Hay muchos sitios falsos! Este es el único que realmente funciona.\n\n🔗 Enlace exclusivo (no está en Google): ➡️freerewards-psi.vercel.app\n\n👉 ¡Agradéceme después cuando tengas esa skin legendaria!\n\n#FreeFireDicas #DiamantesGratis"
   }
 };
