@@ -24,7 +24,8 @@ import {
   Search,
   UserCheck,
   AlertCircle,
-  Gamepad2
+  Gamepad2,
+  User
 } from 'lucide-react';
 import { Language, User as UserType } from './types';
 import { TRANSLATIONS, REWARD_LEVELS, OTHER_PRIZES, TESTIMONIALS } from './constants';
@@ -35,27 +36,31 @@ const STORAGE_LANG_KEY = 'freerewards_lang_v1';
 
 // --- Mapeamento de Países para Idiomas ---
 const COUNTRY_TO_LANG: Record<string, Language> = {
-  // Português
   'BR': 'pt', 'PT': 'pt', 'AO': 'pt', 'MZ': 'pt', 'CV': 'pt', 'ST': 'pt', 'TL': 'pt', 'GW': 'pt',
-  // Espanhol
   'ES': 'es', 'MX': 'es', 'AR': 'es', 'CO': 'es', 'CL': 'es', 'PE': 'es', 'VE': 'es', 'EC': 'es', 
   'GT': 'es', 'CU': 'es', 'BO': 'es', 'DO': 'es', 'HN': 'es', 'PY': 'es', 'SV': 'es', 'NI': 'es', 
   'CR': 'es', 'UY': 'es', 'PA': 'es', 'GQ': 'es'
 };
 
+// --- Lista de Nicknames para simulação ---
+const MOCK_NICKNAMES = ["EL_Gato", "Nobru_TV", "LevelUP", "Bak_X", "Fluxo_Vini", "Loud_Victor", "God_Jordan", "Ninja_Free", "Pro_Player_01", "Sniper_Elite"];
+
 // --- Função de Simulação de Consulta (API do Jogo) ---
-const consultar_id_jogo = async (id: string, game: 'ff' | 'rbx'): Promise<{ success: boolean, error?: string }> => {
+const consultar_id_jogo = async (id: string, game: 'ff' | 'rbx'): Promise<{ success: boolean, error?: string, nickname?: string }> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const numericId = id.replace(/\D/g, '');
+      
+      // Regras de validação simuladas
       if (numericId.length < 8) {
-        resolve({ success: false, error: `O ID do ${game === 'ff' ? 'Free Fire' : 'Roblox'} deve ter pelo menos 8 dígitos numéricos.` });
-      } else if (numericId === "00000000" || numericId === "11111111") {
-        resolve({ success: false, error: "Jogador não encontrado. Verifique o ID e tente novamente." });
+        resolve({ success: false, error: "ID INDISPONÍVEL" });
+      } else if (numericId === "00000000" || numericId === "12345678" || numericId.includes("666")) {
+        resolve({ success: false, error: "ID INDISPONÍVEL" });
       } else {
-        resolve({ success: true });
+        const randomNick = MOCK_NICKNAMES[Math.floor(Math.random() * MOCK_NICKNAMES.length)];
+        resolve({ success: true, nickname: `${randomNick}` });
       }
-    }, 1500);
+    }, 1800);
   });
 };
 
@@ -148,11 +153,12 @@ const Navbar: React.FC<{
   );
 };
 
-const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string) => void }> = ({ onClose, onSuccess }) => {
+const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string, nick: string) => void }> = ({ onClose, onSuccess }) => {
   const [gameId, setGameId] = useState('');
   const [selectedGame, setSelectedGame] = useState<'ff' | 'rbx'>('ff');
   const [status, setStatus] = useState<'idle' | 'verifying' | 'confirmed' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [foundNickname, setFoundNickname] = useState('');
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,10 +169,11 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string)
     
     const result = await consultar_id_jogo(gameId, selectedGame);
     
-    if (result.success) {
+    if (result.success && result.nickname) {
+      setFoundNickname(result.nickname);
       setStatus('confirmed');
     } else {
-      setErrorMsg(result.error || 'Erro desconhecido');
+      setErrorMsg(result.error || 'ID INVÁLIDO');
       setStatus('error');
     }
   };
@@ -177,92 +184,103 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string)
         <button onClick={onClose} className="absolute top-6 right-6 text-gray-300 hover:text-gray-900 transition-colors"><X size={24} /></button>
         
         <div className="text-center mb-8">
-          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 border-4 transition-all duration-500 ${status === 'confirmed' ? 'bg-green-50 border-green-100' : 'bg-blue-50 border-blue-50'}`}>
-            {status === 'confirmed' ? <UserCheck className="w-10 h-10 text-green-500" /> : <Gamepad2 className="w-10 h-10 text-electric-blue" />}
+          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 border-4 transition-all duration-500 ${status === 'confirmed' ? 'bg-green-50 border-green-100 scale-110' : status === 'error' ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-50'}`}>
+            {status === 'confirmed' ? <UserCheck className="w-10 h-10 text-green-500" /> : status === 'error' ? <AlertCircle className="w-10 h-10 text-red-500" /> : <Gamepad2 className="w-10 h-10 text-electric-blue" />}
           </div>
-          <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Vincule seu Jogo</h2>
-          <p className="text-gray-500 text-sm font-medium">Insira seu ID oficial para sincronizar os bônus.</p>
+          <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Vincular Conta</h2>
+          <p className="text-gray-500 text-sm font-medium">Sincronize seu ID para receber recompensas automáticas.</p>
         </div>
 
-        {status !== 'confirmed' && (
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <button 
-              onClick={() => setSelectedGame('ff')}
-              disabled={status === 'verifying'}
-              className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${selectedGame === 'ff' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}
-            >
-              <div className="h-10 w-10 overflow-hidden rounded-lg bg-white p-1 shadow-sm">
-                 <img src="https://upload.wikimedia.org/wikipedia/en/2/29/Free_Fire_Logo.png" alt="Free Fire" className="w-full h-full object-contain" />
+        {status === 'confirmed' ? (
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+             <div className="bg-green-50 border-2 border-green-100 rounded-3xl p-6 text-center">
+                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Conta Encontrada</p>
+                <h3 className="text-3xl font-black text-green-900 mb-2 truncate">{foundNickname}</h3>
+                <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20">
+                   <ShieldCheck size={14} />
+                   STATUS: VÁLIDO E VINCULADO
+                </div>
+             </div>
+             <button 
+                type="button"
+                onClick={() => onSuccess(gameId, foundNickname)}
+                className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-green-500/20 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+              >
+                PROSSEGUIR PARA O PAINEL <ArrowRight size={20} />
+              </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setSelectedGame('ff')}
+                disabled={status === 'verifying'}
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${selectedGame === 'ff' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}
+              >
+                <div className="h-10 w-10 overflow-hidden rounded-lg bg-white p-1 shadow-sm">
+                   <img src="https://upload.wikimedia.org/wikipedia/en/2/29/Free_Fire_Logo.png" alt="Free Fire" className="w-full h-full object-contain" />
+                </div>
+                <span className={`text-[11px] font-black uppercase tracking-wider ${selectedGame === 'ff' ? 'text-orange-600' : 'text-gray-400'}`}>Free Fire</span>
+              </button>
+              <button 
+                onClick={() => setSelectedGame('rbx')}
+                disabled={status === 'verifying'}
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${selectedGame === 'rbx' ? 'border-gray-900 bg-gray-100' : 'border-gray-100 bg-gray-50'}`}
+              >
+                <div className="h-10 w-10 overflow-hidden rounded-lg bg-white p-1 shadow-sm">
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Roblox_player_icon_black.svg/1024px-Roblox_player_icon_black.svg.png" alt="Roblox" className="w-full h-full object-contain" />
+                </div>
+                <span className={`text-[11px] font-black uppercase tracking-wider ${selectedGame === 'rbx' ? 'text-gray-900' : 'text-gray-400'}`}>Roblox</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div className="relative">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                  ID de Jogador Oficial
+                </label>
+                <div className="relative">
+                  <input 
+                    required
+                    disabled={status === 'verifying'}
+                    type="text" 
+                    inputMode="numeric"
+                    placeholder={selectedGame === 'ff' ? "Ex: 159827364" : "ID Roblox"}
+                    className={`w-full px-6 py-5 rounded-2xl border-2 outline-none transition-all font-black text-xl text-center ${status === 'error' ? 'border-red-200 bg-red-50 text-red-700 focus:border-red-400' : 'border-gray-100 focus:border-electric-blue bg-gray-50 text-gray-900'}`}
+                    value={gameId}
+                    onChange={(e) => {
+                        setGameId(e.target.value);
+                        if(status === 'error') setStatus('idle');
+                    }}
+                  />
+                  {status === 'verifying' && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-6 h-6 text-electric-blue animate-spin" />
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className={`text-[11px] font-black uppercase tracking-wider ${selectedGame === 'ff' ? 'text-orange-600' : 'text-gray-400'}`}>Free Fire</span>
-            </button>
-            <button 
-              onClick={() => setSelectedGame('rbx')}
-              disabled={status === 'verifying'}
-              className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all group ${selectedGame === 'rbx' ? 'border-gray-900 bg-gray-100' : 'border-gray-100 bg-gray-50'}`}
-            >
-              <div className="h-10 w-10 overflow-hidden rounded-lg bg-white p-1 shadow-sm">
-                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Roblox_player_icon_black.svg/1024px-Roblox_player_icon_black.svg.png" alt="Roblox" className="w-full h-full object-contain" />
-              </div>
-              <span className={`text-[11px] font-black uppercase tracking-wider ${selectedGame === 'rbx' ? 'text-gray-900' : 'text-gray-400'}`}>Roblox</span>
-            </button>
+
+              {status === 'error' && (
+                <div className="flex flex-col items-center gap-2 text-red-600 bg-red-50 p-5 rounded-2xl border border-red-100 animate-in shake duration-300">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <span className="text-sm font-black uppercase tracking-tighter">{errorMsg}</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-red-400">Verifique os dígitos e tente novamente.</p>
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={status === 'verifying'}
+                className="w-full bg-[#0a1a3a] hover:bg-gray-800 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-900/10 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {status === 'verifying' ? 'CONSULTANDO BANCO DE DADOS...' : 'BUSCAR JOGADOR'}
+              </button>
+            </form>
           </div>
         )}
-        
-        <form onSubmit={handleVerify} className="space-y-5">
-          <div className="relative">
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">
-              ID do {selectedGame === 'ff' ? 'Free Fire' : 'Roblox'}
-            </label>
-            <input 
-              required
-              disabled={status === 'verifying' || status === 'confirmed'}
-              type="text" 
-              inputMode="numeric"
-              placeholder={selectedGame === 'ff' ? "Ex: 159827364" : "ID Roblox"}
-              className={`w-full px-6 py-5 rounded-2xl border-2 outline-none transition-all font-black text-xl text-center ${status === 'error' ? 'border-red-100 bg-red-50 text-red-900 focus:border-red-300' : 'border-gray-100 focus:border-electric-blue bg-gray-50'}`}
-              value={gameId}
-              onChange={(e) => setGameId(e.target.value)}
-            />
-            {status === 'verifying' && (
-              <div className="absolute right-4 bottom-4">
-                <Loader2 className="w-6 h-6 text-electric-blue animate-spin" />
-              </div>
-            )}
-          </div>
-
-          {status === 'error' && (
-            <div className="flex items-center gap-3 text-red-600 bg-red-50 p-4 rounded-xl text-xs font-bold border border-red-100 animate-in shake duration-300">
-              <AlertCircle size={18} className="shrink-0" />
-              {errorMsg}
-            </div>
-          )}
-
-          {status === 'confirmed' && (
-            <div className="bg-green-50 border border-green-100 p-6 rounded-2xl text-center animate-in fade-in slide-in-from-top-4 duration-500">
-              <span className="text-2xl font-black text-green-900 block mb-1">ID Validado!</span>
-              <span className="text-xs text-green-600 font-bold uppercase tracking-widest">Sua conta está apta para prêmios</span>
-            </div>
-          )}
-
-          {status !== 'confirmed' ? (
-            <button 
-              type="submit"
-              disabled={status === 'verifying'}
-              className="w-full bg-electric-blue hover:bg-blue-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
-            >
-              {status === 'verifying' ? 'CONECTANDO AOS SERVIDORES...' : 'VERIFICAR JOGADOR'}
-            </button>
-          ) : (
-            <button 
-              type="button"
-              onClick={() => onSuccess(gameId)}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-green-500/20 transition-all animate-bounce"
-            >
-              RESGATAR BÔNUS INICIAL
-            </button>
-          )}
-        </form>
       </div>
     </div>
   );
@@ -396,7 +414,7 @@ const RewardsSystem: React.FC<{
                   disabled={isCompleted}
                   className={`w-full py-4 rounded-2xl font-black text-lg transition-all transform active:scale-95 ${isCompleted ? 'bg-green-100 text-green-600 cursor-default' : 'bg-[#0a1a3a] text-white hover:bg-gray-800 shadow-xl'}`}
                 >
-                  {isCompleted ? 'Nível Alcançado' : 'GERAR LINK'}
+                  {isCompleted ? 'Nível Alcançado' : 'RESGATAR'}
                 </button>
               </div>
             );
@@ -554,7 +572,6 @@ export default function App() {
         setLang(COUNTRY_TO_LANG[countryCode]);
         console.log(`FreeRewards: Localização detectada (${countryCode}). Idioma ajustado para ${COUNTRY_TO_LANG[countryCode]}.`);
       } else {
-        // Fallback: Se não for PT ou ES, usa EN
         setLang('en');
       }
     } catch (error) {
@@ -562,12 +579,11 @@ export default function App() {
     }
   }, []);
 
-  // --- Efeito de Inicialização (Carregar Dados + Detecção de IP) ---
+  // --- Efeito de Inicialização ---
   useEffect(() => {
     const savedUser = localStorage.getItem(STORAGE_USER_KEY);
     const savedLang = localStorage.getItem(STORAGE_LANG_KEY);
 
-    // 1. Carregar usuário se existir
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
@@ -577,10 +593,6 @@ export default function App() {
       }
     }
 
-    // 2. Lógica de Idioma: 
-    // Prioridade 1: LocalStorage (Preferência salva)
-    // Prioridade 2: Detecção por IP (Localização geográfica)
-    // Prioridade 3: Default (pt)
     if (savedLang && (['pt', 'en', 'es'].includes(savedLang))) {
       setLang(savedLang as Language);
     } else {
@@ -590,7 +602,7 @@ export default function App() {
     setIsInitialLoad(false);
   }, [detectLanguageByIP]);
 
-  // --- Efeito de Persistência (Salvar Dados) ---
+  // --- Efeito de Persistência ---
   useEffect(() => {
     if (!isInitialLoad) {
       localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
@@ -618,16 +630,16 @@ export default function App() {
     setNotifications(prev => [...prev, msg]);
   }, []);
 
-  const onLoginSuccess = (id: string) => {
+  const onLoginSuccess = (id: string, nick: string) => {
     setUser(prev => ({ 
       ...prev, 
       isLoggedIn: true, 
       email: id, 
-      nickname: "Jogador_" + id.slice(-4), 
+      nickname: nick, 
       unclaimedDiamonds: prev.unclaimedDiamonds > 0 ? prev.unclaimedDiamonds : 10 
     })); 
     setShowLogin(false);
-    addNotification(`ID verificado! Sincronização concluída.`);
+    addNotification(`ID verificado: ${nick}! Sincronização concluída.`);
   };
 
   const handleRedeem = () => {
@@ -646,7 +658,6 @@ export default function App() {
       return;
     }
     
-    // Simulação profissional de compartilhamento
     const increment = Math.floor(Math.random() * 5) + 8;
     setUser(prev => {
       const newShares = prev.shares + increment;
