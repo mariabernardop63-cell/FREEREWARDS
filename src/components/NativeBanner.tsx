@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+iimport { useEffect, useRef } from 'react';
 
 const NativeBanner = () => {
-  const bannerRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<any>(null);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const script = document.createElement('script');
     script.src = "https://pl28517691.effectivegatecpm.com/878e4233857120a9a5ad99a5f373021e/invoke.js";
     script.async = true;
@@ -26,4 +28,3 @@ const NativeBanner = () => {
 };
 
 export default NativeBanner;
-
