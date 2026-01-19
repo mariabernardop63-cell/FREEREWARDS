@@ -25,7 +25,8 @@ import {
   UserCheck,
   AlertCircle,
   Gamepad2,
-  User
+  User,
+  Save
 } from 'lucide-react';
 import { Language, User as UserType } from './types';
 import { TRANSLATIONS, REWARD_LEVELS, OTHER_PRIZES, TESTIMONIALS } from './constants';
@@ -42,25 +43,19 @@ const COUNTRY_TO_LANG: Record<string, Language> = {
   'CR': 'es', 'UY': 'es', 'PA': 'es', 'GQ': 'es'
 };
 
-// --- Lista de Nicknames para simulação ---
-const MOCK_NICKNAMES = ["EL_Gato", "Nobru_TV", "LevelUP", "Bak_X", "Fluxo_Vini", "Loud_Victor", "God_Jordan", "Ninja_Free", "Pro_Player_01", "Sniper_Elite"];
-
-// --- Função de Simulação de Consulta (API do Jogo) ---
-const consultar_id_jogo = async (id: string, game: 'ff' | 'rbx'): Promise<{ success: boolean, error?: string, nickname?: string }> => {
+// --- Função de Registro de ID (Simulada) ---
+const registrar_id_jogo = async (id: string, game: 'ff' | 'rbx'): Promise<{ success: boolean, error?: string }> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const numericId = id.replace(/\D/g, '');
       
-      // Regras de validação simuladas
-      if (numericId.length < 8) {
-        resolve({ success: false, error: "ID INDISPONÍVEL" });
-      } else if (numericId === "00000000" || numericId === "12345678" || numericId.includes("666")) {
-        resolve({ success: false, error: "ID INDISPONÍVEL" });
+      // Validação básica de formato
+      if (numericId.length < 5) {
+        resolve({ success: false, error: "ID INVÁLIDO OU MUITO CURTO" });
       } else {
-        const randomNick = MOCK_NICKNAMES[Math.floor(Math.random() * MOCK_NICKNAMES.length)];
-        resolve({ success: true, nickname: `${randomNick}` });
+        resolve({ success: true });
       }
-    }, 1800);
+    }, 1500);
   });
 };
 
@@ -153,12 +148,11 @@ const Navbar: React.FC<{
   );
 };
 
-const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string, nick: string) => void }> = ({ onClose, onSuccess }) => {
+const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string) => void }> = ({ onClose, onSuccess }) => {
   const [gameId, setGameId] = useState('');
   const [selectedGame, setSelectedGame] = useState<'ff' | 'rbx'>('ff');
   const [status, setStatus] = useState<'idle' | 'verifying' | 'confirmed' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [foundNickname, setFoundNickname] = useState('');
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,10 +161,9 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
     setStatus('verifying');
     setErrorMsg('');
     
-    const result = await consultar_id_jogo(gameId, selectedGame);
+    const result = await registrar_id_jogo(gameId, selectedGame);
     
-    if (result.success && result.nickname) {
-      setFoundNickname(result.nickname);
+    if (result.success) {
       setStatus('confirmed');
     } else {
       setErrorMsg(result.error || 'ID INVÁLIDO');
@@ -185,7 +178,7 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
         
         <div className="text-center mb-8">
           <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 border-4 transition-all duration-500 ${status === 'confirmed' ? 'bg-green-50 border-green-100 scale-110' : status === 'error' ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-50'}`}>
-            {status === 'confirmed' ? <UserCheck className="w-10 h-10 text-green-500" /> : status === 'error' ? <AlertCircle className="w-10 h-10 text-red-500" /> : <Gamepad2 className="w-10 h-10 text-electric-blue" />}
+            {status === 'confirmed' ? <Save className="w-10 h-10 text-green-500" /> : status === 'error' ? <AlertCircle className="w-10 h-10 text-red-500" /> : <Gamepad2 className="w-10 h-10 text-electric-blue" />}
           </div>
           <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Vincular Conta</h2>
           <p className="text-gray-500 text-sm font-medium">Sincronize seu ID para receber recompensas automáticas.</p>
@@ -194,19 +187,20 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
         {status === 'confirmed' ? (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
              <div className="bg-green-50 border-2 border-green-100 rounded-3xl p-6 text-center">
-                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Conta Encontrada</p>
-                <h3 className="text-3xl font-black text-green-900 mb-2 truncate">{foundNickname}</h3>
-                <div className="inline-flex items-center gap-2 bg-green-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20">
-                   <ShieldCheck size={14} />
-                   STATUS: VÁLIDO E VINCULADO
+                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">ID Salvo com Sucesso</p>
+                <h3 className="text-3xl font-black text-green-900 mb-3 truncate">{gameId}</h3>
+                <div className="bg-white/60 p-4 rounded-2xl border border-green-200">
+                  <p className="text-[11px] text-green-800 font-bold leading-relaxed">
+                    <b>Nota de Segurança:</b> Seu ID foi registrado. A validação oficial de titularidade e a transferência dos itens serão concluídas automaticamente no momento do seu <b>primeiro pedido de resgate</b>.
+                  </p>
                 </div>
              </div>
              <button 
                 type="button"
-                onClick={() => onSuccess(gameId, foundNickname)}
+                onClick={() => onSuccess(gameId)}
                 className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-green-500/20 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
               >
-                PROSSEGUIR PARA O PAINEL <ArrowRight size={20} />
+                ACESSAR MEU PAINEL <ArrowRight size={20} />
               </button>
           </div>
         ) : (
@@ -244,8 +238,7 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
                     required
                     disabled={status === 'verifying'}
                     type="text" 
-                    inputMode="numeric"
-                    placeholder={selectedGame === 'ff' ? "Ex: 159827364" : "ID Roblox"}
+                    placeholder={selectedGame === 'ff' ? "Ex: 159827364" : "ID do Jogador"}
                     className={`w-full px-6 py-5 rounded-2xl border-2 outline-none transition-all font-black text-xl text-center ${status === 'error' ? 'border-red-200 bg-red-50 text-red-700 focus:border-red-400' : 'border-gray-100 focus:border-electric-blue bg-gray-50 text-gray-900'}`}
                     value={gameId}
                     onChange={(e) => {
@@ -267,7 +260,6 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
                     <AlertCircle size={20} className="shrink-0" />
                     <span className="text-sm font-black uppercase tracking-tighter">{errorMsg}</span>
                   </div>
-                  <p className="text-[10px] font-bold text-red-400">Verifique os dígitos e tente novamente.</p>
                 </div>
               )}
 
@@ -276,7 +268,7 @@ const RegistrationModal: React.FC<{ onClose: () => void, onSuccess: (id: string,
                 disabled={status === 'verifying'}
                 className="w-full bg-[#0a1a3a] hover:bg-gray-800 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-900/10 transition-all transform active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {status === 'verifying' ? 'CONSULTANDO BANCO DE DADOS...' : 'BUSCAR JOGADOR'}
+                {status === 'verifying' ? 'REGISTRANDO NO BANCO...' : 'SALVAR ID DO JOGADOR'}
               </button>
             </form>
           </div>
@@ -473,9 +465,9 @@ const RedeemModal: React.FC<{
               <h2 className="text-3xl font-black tracking-tight">Painel de Resgate</h2>
               <div className="flex items-center gap-2 mt-1">
                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                 <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">{user.nickname}</p>
+                 <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">ID: {user.email}</p>
               </div>
-              <p className="text-[10px] text-white/40 uppercase font-black tracking-[0.2em] mt-2">ID: {user.email}</p>
+              <p className="text-[10px] text-white/40 uppercase font-black tracking-[0.2em] mt-2">Aguardando Validação no Resgate</p>
             </div>
           </div>
           
@@ -537,7 +529,7 @@ const RedeemModal: React.FC<{
             }`}
           >
             {isProcessing ? <Loader2 className="animate-spin" /> : <Gem className="w-6 h-6" />}
-            {isProcessing ? 'Sincronizando com Garena...' : 'RESGATAR PARA MINHA CONTA'}
+            {isProcessing ? 'Validando ID na Garena...' : 'SOLICITAR RESGATE AGORA'}
           </button>
         </div>
       </div>
@@ -630,16 +622,15 @@ export default function App() {
     setNotifications(prev => [...prev, msg]);
   }, []);
 
-  const onLoginSuccess = (id: string, nick: string) => {
+  const onLoginSuccess = (id: string) => {
     setUser(prev => ({ 
       ...prev, 
       isLoggedIn: true, 
       email: id, 
-      nickname: nick, 
       unclaimedDiamonds: prev.unclaimedDiamonds > 0 ? prev.unclaimedDiamonds : 10 
     })); 
     setShowLogin(false);
-    addNotification(`ID verificado: ${nick}! Sincronização concluída.`);
+    addNotification(`ID ${id} registrado com sucesso.`);
   };
 
   const handleRedeem = () => {
@@ -648,7 +639,7 @@ export default function App() {
       diamonds: prev.diamonds + prev.unclaimedDiamonds,
       unclaimedDiamonds: 0
     }));
-    addNotification("RESGATE SUCESSO! Diamantes em processamento.");
+    addNotification("RESGATE SOLICITADO! Seu ID está em fila de processamento.");
     setTimeout(() => setShowRedeem(false), 1500);
   };
 
@@ -700,8 +691,8 @@ export default function App() {
             <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
               <div className="flex items-center gap-8">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Jogador Ativo</span>
-                  <span className="text-sm font-black text-[#0a1a3a] truncate max-w-[140px]">{user.nickname}</span>
+                  <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-0.5">ID Registrado</span>
+                  <span className="text-sm font-black text-[#0a1a3a] truncate max-w-[140px]">{user.email}</span>
                 </div>
                 <div className="h-10 w-px bg-gray-100"></div>
                 <div className="flex flex-col">
