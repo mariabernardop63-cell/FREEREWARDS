@@ -29,7 +29,9 @@ import {
   Save
 } from 'lucide-react';
 import { Language, User as UserType } from './types';
+
 import NativeBanner from './components/NativeBanner';
+
 import { TRANSLATIONS, REWARD_LEVELS, OTHER_PRIZES, TESTIMONIALS } from './constants';
 
 // --- Chaves do LocalStorage ---
