@@ -29,6 +29,8 @@ import {
   Save
 } from 'lucide-react';
 import { Language, User as UserType } from './types';
+import NativeBanner from './components/NativeBanner';
+import NativeBanner from './components/NativeBanner';
 import { TRANSLATIONS, REWARD_LEVELS, OTHER_PRIZES, TESTIMONIALS } from './constants';
 
 // --- Chaves do LocalStorage ---
@@ -73,6 +75,10 @@ const Navbar: React.FC<{
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0a1a3a] text-white shadow-xl border-b border-white/5">
+
+<NativeBanner />
+
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
