@@ -81,10 +81,7 @@ const Navbar: React.FC<{
           <div className="flex items-center gap-2">
             <div className="bg-electric-blue p-1.5 rounded-lg">
               <Gem className="text-white w-5 h-5" />
-            </div>
-
-<NativeBanner />
-            
+            </div>    
             <span className="font-extrabold text-xl tracking-tighter">FREE<span className="text-electric-blue">REWARDS</span></span>
           </div>
           
@@ -688,6 +685,8 @@ export default function App() {
         onOpenRedeem={() => setShowRedeem(true)} 
         user={user} 
       />
+
+      <NativeBanner />
       
       <main>
         <Hero lang={lang} onStart={user.isLoggedIn ? () => document.getElementById('como-funciona')?.scrollIntoView({behavior: 'smooth'}) : handleLogin} />
